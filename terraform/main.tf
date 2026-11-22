@@ -55,6 +55,8 @@ resource "google_container_cluster" "secure_inference_cluster" {
     enable_private_endpoint = false
     master_ipv4_cidr_block  = "172.16.0.0/28"
   }
+  # 5. Enable Intranode Visibility to ensure all pod-to-pod traffic is auditable via VPC Flow Logs (via Checkov CKV_GCP_61)
+  enable_intranode_visibility = true
 
 }
 
