@@ -1,0 +1,9 @@
+# Ignore Terraform local download of large plugin files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+
+# Ignore Python cache and environment variable key files
+__pycache__/
+*.py[cod]
+.env

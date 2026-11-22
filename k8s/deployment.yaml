@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roboflow-inference-secure
+  labels:
+    app: roboflow-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: roboflow-inference
+  template:
+    metadata:
+      labels:
+        app: roboflow-inference
+    spec:
+      # 1. Least Privilege Principle: Do not automatically mount the default K8s ServiceAccount Token to prevent lateral movement within the cluster
+      automountServiceAccountToken: false
+      
+      # 2. Pod-Level Security Hardening: Enforce execution as a non-root user
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+      - name: inference-server
+        image: roboflow/roboflow-inference-server-cpu:latest
+        ports:
+        - containerPort: 9001
+        
+        # 3. Container-Level Security Hardening: Prohibit privilege escalation and disable all Linux capabilities
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+
+        # 4. Inject API Key via Kubernetes Secret (Never hardcode in YAML)
+        env:
+        - name: ROBOFLOW_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: roboflow-secret
+              key: api-key
+
+        # 5. Resource Limits: Prevent OOM DoS attacks by limiting memory usage
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2000m"
+            memory: "4Gi"
+
+        # Because readOnlyRootFilesystem is enabled, we need to mount a temporary filesystem for model caching
+        volumeMounts:
+        - name: tmp-cache
+          mountPath: /tmp
+
+      volumes:
+      - name: tmp-cache
+        emptyDir:
+          sizeLimit: 1Gi
