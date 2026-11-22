@@ -48,4 +48,14 @@ resource "google_container_cluster" "secure_inference_cluster" {
 
   # 3. Stop using the insecure legacy ABAC authorization, enforce RBAC
   enable_legacy_abac = false
+
+  # 4. Use private cluster configuration to eliminate public IP exposure risks (via Checkov CKV_GCP_25)
+  private_cluster_config {
+    enable_private_nodes    = true
+    enable_private_endpoint = false
+    master_ipv4_cidr_block  = "172.16.0.0/28"
+  }
+
 }
+
+  
